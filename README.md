@@ -1,6 +1,7 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Shell](https://img.shields.io/badge/shell-bash%20%7C%20powershell-orange)
+<img width="1536" height="1024" alt="home-brige-github" src="https://github.com/user-attachments/assets/a30aa2e8-6086-44fc-94e6-5f4e5405e411" />
 
 # HomeBridge
 
