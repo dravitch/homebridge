@@ -3,22 +3,30 @@
 ![Shell](https://img.shields.io/badge/shell-bash%20%7C%20powershell-orange)
 <img width="1536" height="1024" alt="home-brige-github" src="https://github.com/user-attachments/assets/a30aa2e8-6086-44fc-94e6-5f4e5405e411" />
 
-# HomeBridge
-
+🏠 HomeBridge - Secure Remote Desktop Access
 **Own Your Remote Access. Forever.**
 
-Automated configuration to access a Windows PC from Linux via a relay server, with RDP support.
+**v1.1** - RDP + VNC support via SSH reverse tunnels
 
-> 💡 **Why HomeBridge exists**: In a world of commercial remote desktop solutions with monthly subscriptions and arbitrary limits, HomeBridge is built on open standards (SSH, RDP) and runs on your infrastructure. Read our [MANIFESTO](MANIFESTO.md) to understand our philosophy of digital self-reliance.
+Automated configuration to access a Windows PC from Linux via a relay server, with RDP and VNC support without exposing any ports to the internet.
 
-## 🎯 Features
+> 💡 **Why HomeBridge exists**: In a world of commercial remote desktop solutions with monthly subscriptions and arbitrary limits, HomeBridge is built on open standards (SSH, RDP, VNC) and runs on your infrastructure. Read our [MANIFESTO](MANIFESTO.md) to understand our philosophy of digital self-reliance.
 
-- ✅ Automatic SSH reverse tunnel at Windows startup (SYSTEM account)
-- ✅ Passwordless SSH connection (public key authentication)
-- ✅ Secure RDP access via SSH tunnel
-- ✅ Windows 11 HOME support with RDP Wrapper
-- ✅ Fail2ban protection on relay
-- ✅ SSH multiplexing to avoid multiple authentications
+## ✨ Features
+
+- 🖥️ **RDP Support** – Full remote desktop with dedicated session  
+- 👀 **VNC Support** – Screen sharing with existing session  
+- 🔒 **Secure** – All traffic through encrypted SSH tunnels  
+- 🔑 **Key-based auth** – No passwords, SSH keys only  
+- 🚀 **Simple setup** – Automated scripts for all components  
+- 🌐 **NAT-friendly** – Works behind firewalls and NAT  
+- 🧩 **Auto-tunnel at startup** – SSH reverse tunnel via SYSTEM account  
+- 🛂 **Passwordless login** – Public key authentication only  
+- 🛡️ **Secure RDP access** – RDP over SSH tunnel  
+- 🏠 **Win11 HOME support** – Compatible via RDP Wrapper  
+- 🧱 **Relay protection** – Fail2ban enabled  
+- 🔁 **SSH multiplexing** – Avoids repeated authentications  
+
 
 ## 📋 Architecture
 
