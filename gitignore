@@ -1,0 +1,137 @@
+# ====================================================================
+# HomeBridge .gitignore
+# Prevent secrets, keys, and temp files from being committed
+# ====================================================================
+
+# ============================================================
+# SECRETS & KEYS - CRITICAL
+# ============================================================
+# SSH Keys
+*.pem
+*.key
+id_rsa*
+*.pub
+authorized_keys
+known_hosts
+
+# Environment files
+config.env
+.env
+.env.*
+*.local
+
+# Certificates
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# ============================================================
+# TEMPORARY FILES
+# ============================================================
+# Backups
+*.backup
+*.backup.*
+*.bak
+*.old
+
+# Patches
+*.patch
+*.diff
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temporary
+*.tmp
+*.temp
+*~
+.*.swp
+.*.swo
+
+# ============================================================
+# OS GENERATED
+# ============================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+
+# ============================================================
+# IDE & EDITORS
+# ============================================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains
+.idea/
+*.iml
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# Sublime
+*.sublime-project
+*.sublime-workspace
+
+# ============================================================
+# PROJECT SPECIFIC
+# ============================================================
+# Git workflow backups (keep main workflow files)
+backup-*/
+
+# Test outputs
+test-results/
+*.test
+
+# Build outputs (if any)
+dist/
+build/
+*.exe
+*.dll
+
+# Node modules (if Node.js is added later)
+node_modules/
+
+# Python cache (if Python scripts are added)
+__pycache__/
+*.pyc
+*.pyo
+
+# ============================================================
+# KEEP THESE FILES (whitelist)
+# ============================================================
+# Explicitly track important scripts
+!gitinit.sh
+!reset_publish.sh
+!check_gitignore.sh
+!git-sync.sh
+!git-clean-and-push.sh
+
+# Keep templates
+!templates/
+!templates/*.template
+
+# Keep documentation
+!*.md
+!docs/

@@ -1,0 +1,48 @@
+# ============================================================
+# HomeBridge - ssh_config.template
+# Copy this file to ~/.ssh/config and customize your values
+# ============================================================
+
+# ====================================================================
+# Relay Server (VPS)
+# ====================================================================
+Host relay
+    HostName YOUR_RELAY_IP              # Example: 172.234.175.48
+    User tunnel                         # Dedicated tunnel user
+    Port 22
+    IdentityFile ~/.ssh/id_rsa
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    Compression yes
+
+# ====================================================================
+# Windows PC via reverse tunnel (SSH/PowerShell connection)
+# ====================================================================
+Host targetpc-windows
+    HostName localhost                  # Do not change
+    User YOUR_WINDOWS_USER              # Example: tunnel-admin
+    Port 2222                           # Reverse tunnel port
+    ProxyJump relay                     # Go through the relay
+    IdentityFile ~/.ssh/id_rsa
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    StrictHostKeyChecking accept-new
+    # Options to avoid key issues
+    UserKnownHostsFile ~/.ssh/known_hosts
+    # Disable password authentication (force key usage)
+    PasswordAuthentication no
+    PubkeyAuthentication yes
+    PreferredAuthentications publickey
+
+# ====================================================================
+# Alias to easily create the RDP tunnel
+# ====================================================================
+Host targetpc-windows-rdp-tunnel
+    HostName localhost
+    User YOUR_WINDOWS_USER
+    Port 2222
+    ProxyJump relay
+    IdentityFile ~/.ssh/id_rsa
+    LocalForward 13389 localhost:3389   # Local RDP forward
+    ExitOnForwardFailure yes
+    ServerAliveInterval 60
