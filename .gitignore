@@ -1,0 +1,27 @@
+# HomeBridge .gitignore
+# Secrets & Keys
+*.pem
+*.key
+id_rsa*
+*.pub
+authorized_keys
+
+# Backups & Temp
+*.backup.*
+*.tmp
+*.log
+*.patch
+
+# Config locale
+config.env
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
