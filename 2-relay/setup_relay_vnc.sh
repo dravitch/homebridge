@@ -2,7 +2,10 @@
 # ====================================================================
 # SETUP RELAY VNC - HomeBridge v1.1
 # Ajoute support VNC au relay existant (suppose setup-relay.sh exécuté)
-# Usage: sudo ./setup-relay-vnc.sh
+# Le relay héberge le tunnel VNC de plusieurs machines Windows ; le port
+# VNC_PORT doit donc être isolé par machine pour éviter toute collision
+# silencieuse entre deux machines (ex: papa et fille).
+# Usage: sudo ./setup_relay_vnc.sh <papa|fille>
 # ====================================================================
 
 set -euo pipefail
@@ -16,14 +19,30 @@ GRAY='\033[0;90m'
 NC='\033[0m' # No Color
 
 # Configuration
+MACHINE="${1:-}"
 TUNNEL_USER="tunnel"
-VNC_PORT=15900
+
+case "$MACHINE" in
+    papa)
+        VNC_PORT=15900
+        ;;
+    fille)
+        VNC_PORT=15901
+        ;;
+    *)
+        echo -e "${RED}[ERREUR] Machine requise et doit être 'papa' ou 'fille'${NC}"
+        echo -e "${YELLOW}Usage: sudo ./setup_relay_vnc.sh <papa|fille>${NC}"
+        exit 1
+        ;;
+esac
+
 HOMEBRIDGE_LOG_DIR="/var/log/homebridge"
-MONITOR_SCRIPT="/usr/local/bin/check-vnc-tunnel.sh"
+MONITOR_SCRIPT="/usr/local/bin/check-vnc-tunnel-${MACHINE}.sh"
 
 echo -e "${CYAN}"
 echo "========================================"
 echo "SETUP RELAY VNC - HomeBridge v1.1"
+echo "Machine: $MACHINE (port $VNC_PORT)"
 echo "Ajoute support VNC au relay existant"
 echo "========================================"
 echo -e "${NC}"
@@ -123,31 +142,31 @@ chown "$TUNNEL_USER:$TUNNEL_USER" "$HOMEBRIDGE_LOG_DIR"
 chmod 755 "$HOMEBRIDGE_LOG_DIR"
 
 # Create monitoring script
-cat > "$MONITOR_SCRIPT" << 'EOF'
+cat > "$MONITOR_SCRIPT" << EOF
 #!/usr/bin/env bash
 # ====================================================================
 # CHECK VNC TUNNEL - HomeBridge v1.1
-# Vérifie l'état du tunnel VNC reverse
+# Vérifie l'état du tunnel VNC reverse ($MACHINE)
 # ====================================================================
 
-VNC_PORT=15900
-LOG_FILE="/var/log/homebridge/vnc-tunnel.log"
+VNC_PORT=$VNC_PORT
+LOG_FILE="$HOMEBRIDGE_LOG_DIR/vnc-tunnel-${MACHINE}.log"
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+    echo "[\$(date '+%Y-%m-%d %H:%M:%S')] \$*" | tee -a "\$LOG_FILE"
 }
 
 # Check if VNC tunnel port is listening
-if ss -tlnp 2>/dev/null | grep -q ":$VNC_PORT"; then
-    log "✅ VNC tunnel actif (port $VNC_PORT)"
-    
+if ss -tlnp 2>/dev/null | grep -q ":\$VNC_PORT"; then
+    log "✅ VNC tunnel actif (port \$VNC_PORT)"
+
     # Get connection info
-    CONN_INFO=$(ss -tlnp 2>/dev/null | grep ":$VNC_PORT")
-    log "   Détails: $CONN_INFO"
-    
+    CONN_INFO=\$(ss -tlnp 2>/dev/null | grep ":\$VNC_PORT")
+    log "   Détails: \$CONN_INFO"
+
     exit 0
 else
-    log "❌ VNC tunnel inactif (port $VNC_PORT non en écoute)"
+    log "❌ VNC tunnel inactif (port \$VNC_PORT non en écoute)"
     log "   Vérifiez la connexion Windows → Relay"
     exit 1
 fi
@@ -204,7 +223,7 @@ echo -e "${CYAN}  # Exécuter monitoring${NC}"
 echo -e "  sudo $MONITOR_SCRIPT"
 echo ""
 echo -e "${CYAN}  # Voir logs tunnel${NC}"
-echo -e "  sudo tail -f $HOMEBRIDGE_LOG_DIR/vnc-tunnel.log"
+echo -e "  sudo tail -f $HOMEBRIDGE_LOG_DIR/vnc-tunnel-${MACHINE}.log"
 
 echo -e "\n${YELLOW}PROCHAINES ÉTAPES:${NC}"
 echo -e "  1. Sur Windows: Double-clic 'Start VNC Server' (bureau)"

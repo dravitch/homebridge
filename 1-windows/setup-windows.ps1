@@ -1,12 +1,16 @@
 # ====================================================================
 # SETUP WINDOWS COMPLET - HomeBridge v1.0
 # Configuration SSH, Tunnel Reverse, RDP et Diagnostic
-# Usage: .\setup_windows_rdp.ps1
+# Usage: .\setup-windows.ps1 -Machine papa   (or -Machine fille)
 # ====================================================================
 
 param(
+    [Parameter(Mandatory=$true, HelpMessage="Which machine is this? Required - no implicit default, to prevent papa/fille config mixups.")]
+    [ValidateSet("papa", "fille")]
+    [string]$Machine,
+
     [Parameter(Mandatory=$false)]
-    [string]$ConfigFile = "config.env"
+    [string]$ConfigFile
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,6 +19,7 @@ Write-Host @"
 ========================================
 SETUP WINDOWS COMPLET - HomeBridge v1.0
 Configuration: SSH + Tunnel + RDP
+Machine: $Machine
 ========================================
 "@ -ForegroundColor Cyan
 
@@ -23,13 +28,20 @@ Configuration: SSH + Tunnel + RDP
 # ====================================================================
 Write-Host "`n[0/4] Chargement configuration..." -ForegroundColor Yellow
 
+# No silent fallback: the config file is derived from the mandatory
+# -Machine parameter, unless the caller explicitly overrides it with
+# -ConfigFile (still requires -Machine to be passed either way).
+if (-not $ConfigFile) {
+    $ConfigFile = "config.env.$Machine"
+}
+
 if (-not (Test-Path $ConfigFile)) {
-    Write-Host "  [ERREUR] Fichier config.env non trouvé!" -ForegroundColor Red
+    Write-Host "  [ERREUR] Fichier $ConfigFile non trouvé!" -ForegroundColor Red
     Write-Host "" -ForegroundColor Red
     Write-Host "  ÉTAPES REQUISES:" -ForegroundColor Yellow
-    Write-Host "  1. Copiez config.env.template vers config.env" -ForegroundColor White
-    Write-Host "  2. Éditez config.env avec vos valeurs" -ForegroundColor White
-    Write-Host "  3. Relancez ce script" -ForegroundColor White
+    Write-Host "  1. Copiez templates\config.env.$Machine vers $ConfigFile" -ForegroundColor White
+    Write-Host "  2. Éditez $ConfigFile avec vos valeurs" -ForegroundColor White
+    Write-Host "  3. Relancez ce script avec -Machine $Machine" -ForegroundColor White
     Write-Host "" -ForegroundColor Red
     exit 1
 }

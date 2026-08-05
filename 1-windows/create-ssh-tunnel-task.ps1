@@ -1,28 +1,36 @@
 # =====================================================================
 # CREATE SSH-REVERSE-TUNNEL-VNC TASK - HomeBridge
 # Crée la tâche planifiée pour le tunnel SSH VNC
-# Usage: .\create-ssh-tunnel-task.ps1
+# Usage: .\create-ssh-tunnel-task.ps1 -Machine papa   (or -Machine fille)
 # =====================================================================
 
 param(
+    [Parameter(Mandatory=$true, HelpMessage="Which machine is this? Required - no implicit default, to prevent papa/fille config mixups.")]
+    [ValidateSet("papa", "fille")]
+    [string]$Machine,
+
     [Parameter(Mandatory=$false)]
-    [string]$ConfigFile = "config.env"
+    [string]$ConfigFile
 )
 
-Write-Host "=== CREATING SSH-REVERSE-TUNNEL-VNC TASK ===" -ForegroundColor Cyan
+Write-Host "=== CREATING SSH-REVERSE-TUNNEL-VNC TASK ($Machine) ===" -ForegroundColor Cyan
 
 # ====================================================================
 # CHARGEMENT CONFIGURATION
 # ====================================================================
 Write-Host "`n[0/4] Chargement configuration..." -ForegroundColor Yellow
 
+if (-not $ConfigFile) {
+    $ConfigFile = "config.env.$Machine"
+}
+
 if (-not (Test-Path $ConfigFile)) {
-    Write-Host "  [ERREUR] Fichier config.env non trouvé!" -ForegroundColor Red
+    Write-Host "  [ERREUR] Fichier $ConfigFile non trouvé!" -ForegroundColor Red
     Write-Host "" -ForegroundColor Red
     Write-Host "  ÉTAPES REQUISES:" -ForegroundColor Yellow
-    Write-Host "  1. Copiez config.env.template vers config.env" -ForegroundColor White
-    Write-Host "  2. Éditez config.env avec vos valeurs" -ForegroundColor White
-    Write-Host "  3. Relancez ce script" -ForegroundColor White
+    Write-Host "  1. Copiez templates\config.env.$Machine vers $ConfigFile" -ForegroundColor White
+    Write-Host "  2. Éditez $ConfigFile avec vos valeurs" -ForegroundColor White
+    Write-Host "  3. Relancez ce script avec -Machine $Machine" -ForegroundColor White
     Write-Host "" -ForegroundColor Red
     exit 1
 }
@@ -44,13 +52,19 @@ Get-Content $ConfigFile | ForEach-Object {
 # Extract values
 $RelayServer = $config["RELAY_IP"]
 $RelayUser = $config["RELAY_USER"]
-$ReversePort = 15900  # VNC uses fixed port 15900
+$ReversePort = $config["VNC_REVERSE_PORT"]  # per-machine VNC relay port (see config.env.papa / config.env.fille)
 
 # Validate
 if (-not $RelayServer -or $RelayServer -eq "RELAY_IP") {
-    Write-Host "  [ERREUR] RELAY_IP non configuré dans config.env!" -ForegroundColor Red
+    Write-Host "  [ERREUR] RELAY_IP non configuré dans $ConfigFile!" -ForegroundColor Red
     exit 1
 }
+
+if (-not $ReversePort) {
+    Write-Host "  [ERREUR] VNC_REVERSE_PORT non configuré dans $ConfigFile!" -ForegroundColor Red
+    exit 1
+}
+$ReversePort = [int]$ReversePort
 
 Write-Host "  [OK] Configuration chargée:" -ForegroundColor Green
 Write-Host "    Relay: $RelayServer" -ForegroundColor Gray
