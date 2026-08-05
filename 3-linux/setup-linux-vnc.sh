@@ -17,6 +17,16 @@ read -p "Windows host name from SSH config [papa-windows]: " WINDOWS_BASE
 WINDOWS_BASE=${WINDOWS_BASE:-papa-windows}
 WINDOWS_VNC_HOST="${WINDOWS_BASE}-vnc"
 
+# Local VNC forward port must be unique per machine (see
+# templates/config.env.papa / templates/config.env.fille) so two
+# machines' VNC tunnels never collide on the relay.
+case "$WINDOWS_BASE" in
+    *fille*) DEFAULT_VNC_LOCAL_PORT=15901 ;;
+    *)       DEFAULT_VNC_LOCAL_PORT=15900 ;;
+esac
+read -p "Local VNC tunnel port [$DEFAULT_VNC_LOCAL_PORT]: " VNC_LOCAL_PORT
+VNC_LOCAL_PORT=${VNC_LOCAL_PORT:-$DEFAULT_VNC_LOCAL_PORT}
+
 SSH_CONFIG="$HOME/.ssh/config"
 
 # ====================================================================
@@ -94,7 +104,7 @@ Host $WINDOWS_VNC_HOST
     HostName localhost
     Port 2222
     ProxyJump relay
-    LocalForward 15900 localhost:5900
+    LocalForward $VNC_LOCAL_PORT localhost:5900
     IdentityFile ~/.ssh/id_rsa
     StrictHostKeyChecking accept-new
     ServerAliveInterval 60
@@ -135,15 +145,15 @@ echo "VNC Host configured: $WINDOWS_VNC_HOST"
 echo ""
 echo "Usage:"
 echo "  Manual command:"
-echo "    vncviewer -SecurityTypes None localhost:15900"
+echo "    vncviewer -SecurityTypes None localhost:$VNC_LOCAL_PORT"
 echo ""
 echo "  Full control:"
 echo "    ssh -f -N $WINDOWS_VNC_HOST"
-echo "    vncviewer -SecurityTypes None localhost:15900"
+echo "    vncviewer -SecurityTypes None localhost:$VNC_LOCAL_PORT"
 echo ""
 echo "  View-only:"
 echo "    ssh -f -N $WINDOWS_VNC_HOST"
-echo "    vncviewer -SecurityTypes None -ViewOnly localhost:15900"
+echo "    vncviewer -SecurityTypes None -ViewOnly localhost:$VNC_LOCAL_PORT"
 echo ""
 echo "Prerequisites on Windows:"
 echo "  1. VNC server must be running"

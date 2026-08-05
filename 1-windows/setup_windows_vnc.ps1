@@ -1,12 +1,16 @@
 # ====================================================================
 # SETUP WINDOWS VNC - HomeBridge v1.1
 # Installation complète : TigerVNC + Tunnel + Tâches + Raccourcis
-# Usage: .\setup-windows-vnc.ps1
+# Usage: .\setup_windows_vnc.ps1 -Machine papa   (or -Machine fille)
 # ====================================================================
 
 param(
+    [Parameter(Mandatory=$true, HelpMessage="Which machine is this? Required - no implicit default, to prevent papa/fille config mixups.")]
+    [ValidateSet("papa", "fille")]
+    [string]$Machine,
+
     [Parameter(Mandatory=$false)]
-    [string]$ConfigFile = "config.env"
+    [string]$ConfigFile
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,6 +19,7 @@ Write-Host @"
 ========================================
 SETUP WINDOWS VNC - HomeBridge v1.1
 Configuration: TigerVNC + Tunnel SSH
+Machine: $Machine
 ========================================
 "@ -ForegroundColor Cyan
 
@@ -23,13 +28,17 @@ Configuration: TigerVNC + Tunnel SSH
 # ====================================================================
 Write-Host "`n[0/8] Chargement configuration..." -ForegroundColor Yellow
 
+if (-not $ConfigFile) {
+    $ConfigFile = "config.env.$Machine"
+}
+
 if (-not (Test-Path $ConfigFile)) {
-    Write-Host "  [ERREUR] Fichier config.env non trouvé!" -ForegroundColor Red
+    Write-Host "  [ERREUR] Fichier $ConfigFile non trouvé!" -ForegroundColor Red
     Write-Host "" -ForegroundColor Red
     Write-Host "  ÉTAPES REQUISES:" -ForegroundColor Yellow
-    Write-Host "  1. Copiez config.env.template vers config.env" -ForegroundColor White
-    Write-Host "  2. Éditez config.env avec vos valeurs" -ForegroundColor White
-    Write-Host "  3. Relancez ce script" -ForegroundColor White
+    Write-Host "  1. Copiez templates\config.env.$Machine vers $ConfigFile" -ForegroundColor White
+    Write-Host "  2. Éditez $ConfigFile avec vos valeurs" -ForegroundColor White
+    Write-Host "  3. Relancez ce script avec -Machine $Machine" -ForegroundColor White
     Write-Host "" -ForegroundColor Red
     exit 1
 }
@@ -51,14 +60,21 @@ Get-Content $ConfigFile | ForEach-Object {
 # Extract VNC-specific values
 $RelayServer = $config["RELAY_IP"]
 $RelayUser = $config["RELAY_USER"]
-$ReversePort = 15900  # VNC uses fixed port 15900 (different from RDP)
+$ReversePort = $config["VNC_REVERSE_PORT"]  # per-machine VNC relay port (see config.env.papa / config.env.fille)
 
 # Validate required values
 if (-not $RelayServer -or $RelayServer -eq "RELAY_IP") {
-    Write-Host "  [ERREUR] RELAY_IP non configuré dans config.env!" -ForegroundColor Red
-    Write-Host "  Éditez config.env et définissez RELAY_IP=VOTRE_IP_RELAY" -ForegroundColor Yellow
+    Write-Host "  [ERREUR] RELAY_IP non configuré dans $ConfigFile!" -ForegroundColor Red
+    Write-Host "  Éditez $ConfigFile et définissez RELAY_IP=VOTRE_IP_RELAY" -ForegroundColor Yellow
     exit 1
 }
+
+if (-not $ReversePort) {
+    Write-Host "  [ERREUR] VNC_REVERSE_PORT non configuré dans $ConfigFile!" -ForegroundColor Red
+    Write-Host "  Éditez $ConfigFile et définissez VNC_REVERSE_PORT (ex: 15900 pour papa, 15901 pour fille)" -ForegroundColor Yellow
+    exit 1
+}
+$ReversePort = [int]$ReversePort
 
 if (-not $RelayUser -or $RelayUser -eq "tunnel") {
     Write-Host "  [WARN] RELAY_USER utilise valeur par défaut 'tunnel'" -ForegroundColor Yellow
@@ -344,7 +360,7 @@ $tunnelScriptPath = "$systemProfileDir\ssh-reverse-tunnel-vnc.ps1"
 $tunnelScriptContent = @"
 # ====================================================================
 # SSH REVERSE TUNNEL FOR VNC - HomeBridge v1.1
-# Tunnel SSH inverse pour VNC (Windows:5900 → Relay:15900)
+# Tunnel SSH inverse pour VNC (Windows:5900 → Relay:$ReversePort)
 # ====================================================================
 
 `$RELAY_SERVER = "$RelayServer"

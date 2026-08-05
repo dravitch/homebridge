@@ -2,7 +2,7 @@
 # ====================================================================
 # VNC CLIENT - HomeBridge v1.1
 # Connexion VNC vers Windows via tunnel SSH
-# Usage: ./vnc.sh
+# Usage: ./vnc.sh [papa|fille]   (default: papa, unchanged from previous behavior)
 # ====================================================================
 
 set -euo pipefail
@@ -16,9 +16,27 @@ GRAY='\033[0;90m'
 NC='\033[0m' # No Color
 
 # Configuration
-SSH_HOST="papa-windows-vnc"
+# Local tunnel port is per-machine to avoid colliding with another
+# machine's VNC tunnel already forwarded on the relay (see
+# templates/config.env.papa / templates/config.env.fille).
+MACHINE="${1:-papa}"
+case "$MACHINE" in
+    papa)
+        SSH_HOST="papa-windows-vnc"
+        LOCAL_VNC_PORT=15900
+        REVERSE_SSH_PORT=2222
+        ;;
+    fille)
+        SSH_HOST="fille-windows-vnc"
+        LOCAL_VNC_PORT=15901
+        REVERSE_SSH_PORT=2223
+        ;;
+    *)
+        echo "Usage: $0 [papa|fille]"
+        exit 1
+        ;;
+esac
 REMOTE_VNC_PORT=5900
-LOCAL_VNC_PORT=15900
 VNC_VIEWER_TIMEOUT=300  # 5 minutes
 
 echo -e "${CYAN}"
@@ -70,7 +88,7 @@ if ! grep -q "Host $SSH_HOST" ~/.ssh/config 2>/dev/null; then
     cat << EOF
 Host $SSH_HOST
     HostName 172.234.175.48
-    Port 2222
+    Port $REVERSE_SSH_PORT
     User tunnel
     IdentityFile ~/.ssh/id_rsa
     ServerAliveInterval 60

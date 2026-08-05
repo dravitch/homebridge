@@ -1,8 +1,46 @@
 # ====================================================================
 # VERIFY VNC SETUP - HomeBridge v1.1
 # Diagnostic complet de l'installation et configuration VNC
-# Usage: .\Verify-VNC.ps1
+# Usage: .\verify-vnc-script.ps1 -Machine papa   (or -Machine fille)
 # ====================================================================
+
+param(
+    [Parameter(Mandatory=$true, HelpMessage="Which machine is this? Required - no implicit default, to prevent papa/fille config mixups.")]
+    [ValidateSet("papa", "fille")]
+    [string]$Machine,
+
+    [Parameter(Mandatory=$false)]
+    [string]$ConfigFile
+)
+
+if (-not $ConfigFile) {
+    $ConfigFile = "config.env.$Machine"
+}
+
+if (-not (Test-Path $ConfigFile)) {
+    Write-Host "  [ERREUR] Fichier $ConfigFile non trouvé!" -ForegroundColor Red
+    Write-Host "  Copiez templates\config.env.$Machine vers $ConfigFile" -ForegroundColor Yellow
+    exit 1
+}
+
+# Parse config.env.<machine> to know which VNC relay port to check
+$config = @{}
+Get-Content $ConfigFile | ForEach-Object {
+    $line = $_.Trim()
+    if ($line -and -not $line.StartsWith("#")) {
+        $parts = $line -split "=", 2
+        if ($parts.Count -eq 2) {
+            $config[$parts[0].Trim()] = $parts[1].Trim()
+        }
+    }
+}
+
+$VncPort = $config["VNC_REVERSE_PORT"]
+if (-not $VncPort) {
+    Write-Host "  [ERREUR] VNC_REVERSE_PORT non configuré dans $ConfigFile!" -ForegroundColor Red
+    exit 1
+}
+$RelayServer = $config["RELAY_IP"]
 
 $allGood = $true
 $warnings = @()
@@ -116,7 +154,7 @@ Write-Host "`n[4/7] Tunnel SSH" -ForegroundColor Yellow
 
 # Check SSH process
 $sshProcess = Get-Process ssh -ErrorAction SilentlyContinue | Where-Object {
-    $_.CommandLine -like "*15900:127.0.0.1:5900*"
+    $_.CommandLine -like "*${VncPort}:127.0.0.1:5900*"
 }
 
 if ($sshProcess) {
@@ -152,8 +190,8 @@ try {
     $testJob = Start-Job -ScriptBlock {
         param($key, $relay)
         & ssh -i $key -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no tunnel@$relay "echo OK" 2>$null
-    } -ArgumentList $systemKeyPath, "172.234.175.48"
-    
+    } -ArgumentList $systemKeyPath, $RelayServer
+
     $testResult = Wait-Job $testJob -Timeout 10 | Receive-Job
     Remove-Job $testJob -Force
     
@@ -174,22 +212,22 @@ try {
 # ====================================================================
 Write-Host "`n[5/7] Port distant (Relay)" -ForegroundColor Yellow
 
-Write-Host "  [INFO] Vérification port 15900 sur relay..." -ForegroundColor Gray
+Write-Host "  [INFO] Vérification port $VncPort sur relay..." -ForegroundColor Gray
 try {
     $relayJob = Start-Job -ScriptBlock {
-        param($key, $relay)
-        & ssh -i $key -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no tunnel@$relay "ss -tlnp | grep 15900" 2>$null
-    } -ArgumentList $systemKeyPath, "172.234.175.48"
-    
+        param($key, $relay, $port)
+        & ssh -i $key -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no tunnel@$relay "ss -tlnp | grep $port" 2>$null
+    } -ArgumentList $systemKeyPath, $RelayServer, $VncPort
+
     $relayResult = Wait-Job $relayJob -Timeout 10 | Receive-Job
     Remove-Job $relayJob -Force
-    
-    if ($relayResult -match "15900") {
-        Write-Host "  [OK] Port 15900 en écoute sur relay" -ForegroundColor Green
+
+    if ($relayResult -match "$VncPort") {
+        Write-Host "  [OK] Port $VncPort en écoute sur relay" -ForegroundColor Green
     } else {
-        Write-Host "  [WARN] Port 15900 non détecté sur relay" -ForegroundColor Yellow
+        Write-Host "  [WARN] Port $VncPort non détecté sur relay" -ForegroundColor Yellow
         Write-Host "         Le tunnel reverse peut ne pas être établi" -ForegroundColor Gray
-        $warnings += "Port 15900 non ouvert sur relay"
+        $warnings += "Port $VncPort non ouvert sur relay"
     }
 } catch {
     Write-Host "  [WARN] Impossible de vérifier le relay" -ForegroundColor Yellow
